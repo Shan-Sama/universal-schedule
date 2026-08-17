@@ -2,13 +2,37 @@ import {describe,expect,it} from 'vitest';
 import * as XLSX from 'xlsx';
 import {mockRecords} from './mock';
 import {findSchedules,groupRecords,MAX_SCHEDULES,sectionsConflict} from './scheduler';
-import {createSheetDraft,fieldDefinitions,normalizeRows,parseNumberExpression,parseWeekExpression,readExcelWorkbook,slotToPeriods,splitLecturers} from './parser';
+import {clockRangeToPeriods,createSheetDraft,fieldDefinitions,normalizeRows,parseClockMinutes,parseClockRangeExpression,parseHustWorkload,parseNumberExpression,parseWeekExpression,readExcelWorkbook,slotToPeriods,splitLecturers} from './parser';
 import {normalizeSearchText} from './display';
 import type {Course} from './types';
 
 describe('Universal scheduler',()=>{
   it('đổi 4 ca thành 12 tiết',()=>{
     expect([1,2,3,4].map(slotToPeriods)).toEqual([{start:1,end:3},{start:4,end:6},{start:7,end:9},{start:10,end:12}]);
+  });
+  it('tách Khối_lượng HUST và lấy tín chỉ dùng chung với VNU',()=>{
+    expect(parseHustWorkload('2 ( 2 - 1 - 0 - 4 )')).toMatchObject({credits:2,lecturePeriods:2,exercisePeriods:1,practicePeriods:0,selfStudyPeriods:4});
+    const records=normalizeRows([{'Mã_HP':'EMA3135','Tên_HP':'Ví dụ HUST','Mã_lớp':'EMA3135 1','Khối_lượng':'2(2-1-0-4)'}],'20261');
+    expect(records[0].credits).toBe(2);
+  });
+  it('ưu tiên TC riêng nếu file có cả TC và Khối_lượng',()=>{
+    const records=normalizeRows([{'Mã_HP':'EMA3135','TC':'3','Khối_lượng':'2(2-1-0-4)'}],'20261');
+    expect(records[0].credits).toBe(3);
+  });
+  it('đổi giờ thực tế sang toàn bộ tiết HUST có giao nhau',()=>{
+    expect(clockRangeToPeriods('0700','0900')).toMatchObject({startPeriod:1,endPeriod:3,startTime:'07:00',endTime:'09:00'});
+    expect(clockRangeToPeriods('0730','0930')).toMatchObject({startPeriod:2,endPeriod:4,startTime:'07:30',endTime:'09:30'});
+    expect(clockRangeToPeriods('1800','2030')).toMatchObject({startPeriod:13,endPeriod:14,startTime:'18:00',endTime:'20:30'});
+  });
+  it('đọc giờ từ cột Thời_gian và lưu giờ cụ thể để hiển thị',()=>{
+    expect(parseClockRangeExpression('0645-0910')).toMatchObject({startPeriod:1,endPeriod:3,startTime:'06:45',endTime:'09:10'});
+    expect(parseClockMinutes(7/24)).toBe(420);
+    const records=normalizeRows([{'Mã_HP':'AC2030','Mã_lớp':'158783','Thứ':'2','Thời_gian':'0645-0910','BĐ':'1','KT':'3','Kíp':'Sáng'}],'20261');
+    expect(records[0]).toMatchObject({startPeriod:1,endPeriod:3,startTime:'06:45',endTime:'09:10'});
+  });
+  it('đổi Kíp Tối 1–2 thành tiết 13–14',()=>{
+    const records=normalizeRows([{'Mã_HP':'FLJ1002','Mã_lớp':'1','Thứ':'4','BĐ':'1','KT':'2','Kíp':'Tối'}],'20261');
+    expect(records[0]).toMatchObject({startPeriod:13,endPeriod:14,shift:'Tối'});
   });
   it('hiển thị nhãn tiết thống nhất cho cả UET và HUST',()=>{
     expect(fieldDefinitions.find(field=>field.key==='startPeriod')?.label).toBe('Tiết bắt đầu');

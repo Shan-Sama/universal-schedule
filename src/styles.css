@@ -1040,6 +1040,31 @@ input[type='text'],
   display: flex;
   align-items: center;
   gap: 7px;
+  flex-wrap: wrap;
+}
+
+.row-height-control {
+  display: grid;
+  grid-template-columns: auto 112px 38px;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.row-height-control input {
+  width: 112px;
+  accent-color: var(--primary-2);
+}
+
+.row-height-control output {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .result-nav>button {
@@ -1074,10 +1099,10 @@ input[type='text'],
 
 .table {
   display: grid;
-  grid-template-columns: 56px repeat(6, minmax(128px, 1fr));
-  grid-template-rows: 48px repeat(12, 60px);
+  grid-template-columns: 56px repeat(7, minmax(128px, 1fr));
+  grid-template-rows: 44px repeat(14, var(--period-row-height, 34px));
   width: 100%;
-  min-width: 890px;
+  min-width: 1020px;
   isolation: isolate;
   user-select: text;
 }
@@ -1107,8 +1132,17 @@ input[type='text'],
   display: grid;
   place-items: center;
   background: var(--surface-2);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
+}
+
+.evening-period,
+.evening-cell {
+  background: color-mix(in srgb, var(--surface-2) 72%, #e8c45c 28%);
+}
+
+.evening-period {
+  color: var(--primary-2);
 }
 
 .event-group {
@@ -1125,15 +1159,15 @@ input[type='text'],
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  margin: 3px 0;
-  padding: 8px 9px;
+  margin: 2px 0;
+  padding: 5px 7px;
   overflow: hidden;
   border-left: 4px solid var(--course-border, var(--action));
   color: var(--course-ink, #182d22);
   background: var(--course-bg, var(--accent));
   cursor: text;
-  font-size: 10.5px;
-  line-height: 1.25;
+  font-size: 9.5px;
+  line-height: 1.18;
   user-select: text;
   font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-style: normal;
@@ -1148,18 +1182,24 @@ input[type='text'],
 }
 
 .event b {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .event-course-name {
-  margin: 1px 0 3px;
-  font-size: 10px;
+  margin: 1px 0 2px;
+  font-size: 9.5px;
   line-height: 1.15;
 }
 
 .event-origin {
   color: color-mix(in srgb, var(--course-ink, #365243) 82%, transparent);
   font-size: 9px;
+}
+
+.event-clock {
+  color: color-mix(in srgb, var(--course-ink, #182d22) 88%, var(--primary-2));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .event i {
@@ -1395,8 +1435,8 @@ footer {
   }
 
   .table {
-    grid-template-columns: 45px repeat(6, minmax(0, 1fr));
-    grid-template-rows: 35px repeat(12, 38px);
+    grid-template-columns: 45px repeat(7, minmax(0, 1fr));
+    grid-template-rows: 32px repeat(14, 31px);
     min-width: 0;
     break-inside: avoid;
   }

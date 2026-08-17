@@ -14,7 +14,8 @@ export function sectionOrigin(section: Section) {
 }
 
 export function meetingCompact(meeting: Meeting) {
-  const time = meeting.occupiesSlot ? `T${meeting.day}(${meeting.startPeriod}–${meeting.endPeriod})` : (meeting.componentType === 'ONL' ? 'ONL' : 'Không chiếm lịch');
+  const exactTime = meeting.startTime && meeting.endTime ? ` · ${meeting.startTime}–${meeting.endTime}` : '';
+  const time = meeting.occupiesSlot ? `T${meeting.day}(${meeting.startPeriod}–${meeting.endPeriod})${exactTime}` : (meeting.componentType === 'ONL' ? 'ONL' : 'Không chiếm lịch');
   const group = groupDisplay(meeting.group);
   return [time, meeting.componentType, group, meeting.room, `GV: ${meeting.lecturer || 'Chưa có'}`].filter(Boolean).join(' · ');
 }

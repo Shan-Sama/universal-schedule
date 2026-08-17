@@ -29,7 +29,7 @@ export function groupRecords(records: CanonicalRecord[]): Course[] {
     const sectionRecord=subgroupRecord??alternative.items[0].record;
     const meetings=alternative.items.map(({record,index})=>{
      const occupiesSlot=record.componentType!=='ONL'&&record.day!==null&&record.startPeriod!==null&&record.endPeriod!==null;
-     return {id:`${sectionId}-${alternative.group||'CL'}-${index}`,componentType:record.componentType,group:formatGroup(record.group),day:record.day,slot:record.slot,startPeriod:record.startPeriod,endPeriod:record.endPeriod,room:record.room,lecturer:record.lecturer,lecturers:record.lecturers??(record.lecturer?[record.lecturer]:[]),note:record.note,shift:record.shift??'',weekExpression:record.weekExpression??'',weeks:record.weeks??null,occupiesSlot};
+     return {id:`${sectionId}-${alternative.group||'CL'}-${index}`,componentType:record.componentType,group:formatGroup(record.group),day:record.day,slot:record.slot,startPeriod:record.startPeriod,endPeriod:record.endPeriod,startTime:record.startTime??'',endTime:record.endTime??'',room:record.room,lecturer:record.lecturer,lecturers:record.lecturers??(record.lecturer?[record.lecturer]:[]),note:record.note,shift:record.shift??'',weekExpression:record.weekExpression??'',weeks:record.weeks??null,occupiesSlot};
     });
     course.sections.push({id:sectionId,optionId:subgroupCodes.length?`${sectionId}::${alternative.group}`:sectionId,courseCode,courseName:sectionRecord.courseName,courseNameEnglish:sectionRecord.courseNameEnglish,targetClass:sectionRecord.targetClass,schoolFaculty:sectionRecord.schoolFaculty,group:alternative.group||'CL',capacity:sectionRecord.capacity,meetings});
    });
@@ -43,8 +43,9 @@ const sectionMatchesFilters=(section:Section,filters:ScheduleFilters)=>section.m
  if(!meeting.occupiesSlot)return true;
  if(filters.excludedDays.includes(meeting.day!))return false;
  if(filters.excludedSlots.some(slot=>meeting.startPeriod!<=slot*3&&meeting.endPeriod!>=(slot-1)*3+1))return false;
- if(filters.timeOfDay==='morning'&&meeting.endPeriod!>6)return false;
- if(filters.timeOfDay==='afternoon'&&meeting.startPeriod!<7)return false;
+ if(filters.timeOfDay==='morning'&&(meeting.startPeriod!<1||meeting.endPeriod!>6))return false;
+ if(filters.timeOfDay==='afternoon'&&(meeting.startPeriod!<7||meeting.endPeriod!>12))return false;
+ if(filters.timeOfDay==='evening'&&(meeting.startPeriod!<13||meeting.endPeriod!>14))return false;
  return true;
 });
 export function findSchedules(courses:Course[],selected:Set<string>,allowedSections:Record<string,string[]>,filters:ScheduleFilters={excludedDays:[],excludedSlots:[],timeOfDay:'all'},max=MAX_SCHEDULES):{schedules:Schedule[],diagnostics?:Diagnostics}{

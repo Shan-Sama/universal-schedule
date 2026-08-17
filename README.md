@@ -1,4 +1,4 @@
-# TKB Universal V2.4
+# TKB Universal V2.5
 
 Ứng dụng tạo thời khóa biểu cho dữ liệu **UET/VNU, HUST và các file Excel có cấu trúc tương tự**. Người dùng được kiểm tra lại việc matching cột trước khi nhập dữ liệu, chọn nhiều lớp có thể học, đặt điều kiện nghỉ và tạo tối đa 200 phương án không trùng lịch.
 
@@ -25,16 +25,18 @@ File Excel được xử lý ngay trong trình duyệt và không được gửi
 - Tự nhận diện sheet, dòng header và định dạng UET/VNU hoặc HUST.
 - Cho phép người dùng matching lại từng cột trước khi cập nhật dữ liệu.
 - Giữ toàn bộ cột nguồn trong `sourceData`, kể cả cột không dùng để xếp lịch.
-- Hỗ trợ Ca, Tiết, BĐ/KT, Kíp Sáng/Chiều, tuần chẵn/lẻ và nhiều giảng viên.
+- Hỗ trợ Ca, Tiết, BĐ/KT, Kíp Sáng/Chiều/Tối, giờ học cụ thể, tuần chẵn/lẻ và nhiều giảng viên.
+- Tách `Khối_lượng` HUST như `2(2-1-0-4)` để lấy `2` tín chỉ dùng chung với VNU.
 - Gom dữ liệu theo `Mã HP → Mã LHP → Meeting`.
 - Nhận diện `CL` là cả lớp và tách `N1/N2/N3` thành các lựa chọn BT/TH/TN thay thế nhau.
 - Một môn có thể chọn nhiều section có thể học để hệ thống tự MIX.
 - Bỏ chọn toàn bộ section sẽ chuyển môn sang **Tạm không xếp**, không xóa môn.
 - Tạo tối đa 200 phương án bằng backtracking.
-- Lọc nghỉ ngày, nghỉ ca, chỉ học sáng hoặc chỉ học chiều.
+- Lọc nghỉ ngày, nghỉ ca, nghỉ Kíp Tối, chỉ học sáng, chiều hoặc tối.
 - Mỗi môn nhận một màu pastel riêng, không trùng với môn đang chọn khác.
 - Tìm kiếm không dấu theo mã, tên Việt, tên Anh, lớp và giảng viên.
-- Hiển thị T2–T7 × tiết 1–12, kèm tên môn, nhóm, phòng, giảng viên, Lớp/Khóa và Trường/Viện/Khoa; chữ trong card có thể bôi đen để copy.
+- Hiển thị T2–Chủ nhật × tiết 1–14, kèm tên môn, nhóm, phòng, giảng viên, giờ học cụ thể, Lớp/Khóa và Trường/Viện/Khoa; chữ trong card có thể bôi đen để copy.
+- Có thanh kéo điều chỉnh chiều cao từng tiết để xem gọn trong một màn hình hoặc mở rộng khi cần đọc chi tiết.
 - In hoặc lưu PDF dạng text/vector bằng chức năng Print của trình duyệt.
 - Có ba giao diện **Sáng / Tối / System**.
 - Nút **Hướng dẫn** đọc nội dung ngắn gọn từ `public/HUONG_DAN.md`, hỗ trợ ảnh minh họa.
@@ -95,13 +97,16 @@ Các trường thường dùng:
 | `schoolFaculty` | Trường_Viện_Khoa, Trường_Việt_Khoa |
 | `courseCode` | Mã HP, Mã học phần |
 | `courseName` | Môn, Tên học phần |
+| `credits` | TC, Tín chỉ |
+| `workloadExpression` | Khối_lượng, Khối lượng HUST |
 | `sectionId` | Mã LHP, Mã lớp |
 | `componentType` | LT/BT/TH, Loại lớp |
 | `day` | Thứ |
+| `timeExpression` | Thời_gian, Thời gian cụ thể |
 | `slot` | Ca |
 | `startPeriod` | Tiết bắt đầu, BĐ |
 | `endPeriod` | Tiết kết thúc, KT |
-| `shift` | Kíp, Sáng/Chiều |
+| `shift` | Kíp, Sáng/Chiều/Tối |
 | `weekExpression` | Tuần học, Ghi chú học |
 | `room` | GĐ, Phòng, Địa điểm học |
 | `lecturer` | Giảng viên |
@@ -159,7 +164,7 @@ docs/images/04-chon-mon-va-lop.png
 
 Các bộ lọc gồm:
 
-- **Nghỉ ngày:** chọn một hoặc nhiều ngày T2–T7.
+- **Nghỉ ngày:** chọn một hoặc nhiều ngày T2–Chủ nhật.
 - **Nghỉ ca:** chọn một hoặc nhiều Ca 1–4.
 - **Chỉ học sáng:** tất cả buổi học phải nằm trong tiết 1–6.
 - **Chỉ học chiều:** tất cả buổi học phải nằm trong tiết 7–12.
@@ -218,7 +223,29 @@ Khoảng trắng quanh dấu `-` được chấp nhận.
 
 - Kíp Sáng: KT 1–6 tương ứng tiết 1–6.
 - Kíp Chiều: hệ thống cộng 6; BĐ 1, KT 3 thành tiết 7–9.
-- Một ngày có tổng cộng 12 KT tương ứng 12 tiết.
+- Kíp Tối: BĐ 1, KT 2 tương ứng tiết 13–14.
+- Một ngày có tổng cộng 14 tiết.
+- Giá trị `Thứ = 8` của HUST được hiển thị ở cột **Chủ nhật**.
+
+`Khối_lượng` được phân rã theo dạng:
+
+```text
+2(2-1-0-4)
+│ └──────── LT 2 · BT 1 · TH/TN 0 · Tự học 4
+└────────── 2 tín chỉ
+```
+
+Nếu file có cả `TC` và `Khối_lượng`, cột `TC` được ưu tiên. Nếu chỉ có `Khối_lượng`, số đứng ngoài ngoặc trở thành `credits` dùng chung với VNU.
+
+Các lớp dùng giờ thay cho số tiết cũng được hỗ trợ:
+
+```text
+0700–0900  → chiếm toàn bộ tiết 1–3
+0730–0930  → chiếm toàn bộ tiết 2–4
+1800–2030  → chiếm tiết 13–14 và vẫn hiển thị 18:00–20:30
+```
+
+Quy tắc là lấy mọi tiết có giao với khoảng giờ thực tế. App nhận cả cột `Thời_gian` dạng `0645-0910` và trường hợp BĐ/KT trực tiếp chứa `0700`, `0900`.
 
 ### Tuần học
 
@@ -379,7 +406,7 @@ Project có cả `package-lock.json` và `pnpm-lock.yaml`. Không nên chạy đ
 ```powershell
 git init
 git add .
-git commit -m "feat: TKB Universal V2.4"
+git commit -m "feat: TKB Universal V2.5"
 git branch -M main
 ```
 
@@ -400,15 +427,15 @@ git commit -m "mô tả thay đổi"
 git push
 ```
 
-### Cập nhật V2.4 lên repository hiện có, giữ nguyên link
+### Cập nhật V2.5 lên repository hiện có, giữ nguyên link
 
-Không tạo repository mới và không chạy lại `git init`. Giải nén V2.4, chép các file mới vào đúng thư mục project cũ rồi chạy:
+Không tạo repository mới và không chạy lại `git init`. Chép các file V2.5 vào đúng thư mục project cũ rồi chạy:
 
 ```powershell
 git remote -v
 git status
 git add .
-git commit -m "feat: update TKB Universal V2.4"
+git commit -m "feat: update TKB Universal V2.5"
 git push origin main
 ```
 
@@ -484,7 +511,7 @@ Commit và push thay đổi. Không chỉ chạy lại workflow cũ vì workflow
 ## Cấu trúc project
 
 ```text
-tkb-universal-v2.4/
+tkb-universal-v2.5/
 ├─ .github/workflows/deploy.yml  Build và triển khai GitHub Pages
 ├─ docs/images/                  Ảnh minh họa cho README
 ├─ public/
@@ -525,7 +552,7 @@ npm run test
 npm run build
 ```
 
-Phiên bản V2.4 hiện có 27 kiểm thử tự động cho parser, scheduler, tìm kiếm và bộ cấp màu.
+Phiên bản V2.5 hiện có 32 kiểm thử tự động cho parser, scheduler, tìm kiếm, giờ HUST và bộ cấp màu.
 
 ## Bản quyền
 

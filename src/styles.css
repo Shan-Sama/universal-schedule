@@ -1166,11 +1166,11 @@ input[type='text'],
   color: var(--course-ink, #182d22);
   background: var(--course-bg, var(--accent));
   cursor: text;
+  font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 9.5px;
+  font-style: normal;
   line-height: 1.18;
   user-select: text;
-  font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-style: normal;
 }
 
 .event:first-child {
@@ -1192,24 +1192,70 @@ input[type='text'],
 }
 
 .event-origin {
-  color: color-mix(in srgb, var(--course-ink, #365243) 82%, transparent);
+  color: color-mix(in srgb,
+      var(--course-ink, #365243) 82%,
+      transparent);
   font-size: 9px;
 }
 
+.event-time-line,
+.event-location-week-line {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.event-time-line {
+  column-gap: 8px;
+}
+
+.event-time-line>span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .event-clock {
-  color: color-mix(in srgb, var(--course-ink, #182d22) 88%, var(--primary-2));
+  flex: 0 0 auto;
+  color: color-mix(in srgb,
+      var(--course-ink, #182d22) 88%,
+      var(--primary-2));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.event i {
-  margin-top: auto;
+.event-location-week-line {
+  column-gap: 14px;
+  margin-top: 2px;
+}
+
+.event-room {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.event-week {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.92em;
+  white-space: nowrap;
+}
+
+.event>i {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 4px;
+  overflow: hidden;
+  font-family: inherit;
   font-style: normal;
   font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .online {

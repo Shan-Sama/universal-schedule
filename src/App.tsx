@@ -108,10 +108,190 @@ function MappingPanel({ draft, mapping, setMapping, semester, setSemester, valid
   return <section className="panel mapping-panel"><div className="mapping-heading"><div><h2>02 · Chọn sheet, kiểm tra header và matching</h2><p><b>{draft.fileName}</b> · nhận diện <b>{draft.detectedFormat}</b> · header dòng {draft.headerRow}.</p></div><span className={validation.issues.length || !courseCodeMapped ? 'status bad' : 'status good'}>{!courseCodeMapped ? 'Chưa map Mã HP' : validation.issues.length ? `${validation.issues.length} dòng lỗi` : `${validation.records.length} buổi hợp lệ`}</span></div><label className="sheet-picker"><span>Sheet đang đọc <b>({draft.sheetNames.length} sheet)</b></span><select value={draft.sheetName} onChange={event => onSheetChange(event.target.value)}>{draft.sheetNames.map(name => <option value={name} key={name}>{name}</option>)}</select><small>Đổi sheet nếu số cột hoặc header chưa đúng.</small></label><div className="mapping-help"><b>Chỉ Mã HP là bắt buộc.</b> UET dùng Thứ + Ca; HUST dùng Thứ + BĐ + KT + Kíp.</div>{!semesterMapped && <label className="semester-required semester-quick-fix"><span><b>File chưa có Kỳ học.</b> Nhập kỳ áp dụng cho mọi dòng:</span><input autoFocus value={semester} onChange={event => setSemester(event.target.value)} placeholder="Ví dụ: 20261" /></label>}{!!validation.issues.length && <div className="error-summary"><h3>{validation.issues.length} dòng cần kiểm tra</h3><ol>{validation.issues.map(issue => <li key={issue.rowNumber}><b>Dòng {issue.rowNumber}:</b> {issue.messages.join('; ')}</li>)}</ol></div>}<div className="mapping-sections">{mappingGroups.map(group => <section className="map-group" key={group.title}><div className="map-group-title"><h3>{group.title}</h3><span>{group.description}</span></div><div className="mapping-grid">{fieldDefinitions.filter(field => group.keys.includes(field.key)).map(field => <label className={field.required && typeof mapping[field.key] !== 'number' ? 'map-item missing' : 'map-item'} key={field.key}><span>{field.label}{field.required && <strong> *</strong>}<small>{field.key}</small></span><select value={typeof mapping[field.key] === 'number' ? String(mapping[field.key]) : ''} onChange={event => setMapping({ ...mapping, [field.key]: event.target.value === '' ? null : Number(event.target.value) })}><option value="">— Không lấy —</option>{draft.columns.map(column => <option value={column.index} key={column.index}>{column.excelColumn} · {column.label}</option>)}</select></label>)}</div></section>)}</div><h3 className="preview-title">Tất cả cột nguồn ({draft.columns.length})</h3><div className="source-columns"><table><thead><tr><th>Cột</th><th>Header</th><th>Ví dụ</th><th>Matching</th></tr></thead><tbody>{draft.columns.map(column => { const sample = draft.rows.find(row => String(row[column.index] ?? '').trim())?.[column.index]; const targets = fieldDefinitions.filter(field => mapping[field.key] === column.index).map(field => field.label); return <tr key={column.index}><td><b>{column.excelColumn}</b></td><td>{column.label}</td><td>{String(sample ?? '')}</td><td>{targets.join(', ') || 'Giữ metadata'}</td></tr> })}</tbody></table></div><h3 className="preview-title">Xem trước sau matching</h3><div className="preview-wrap"><table className="preview-table"><thead><tr><th>Dòng</th>{previewFields.map(key => <th key={key}>{fieldDefinitions.find(field => field.key === key)?.label}</th>)}<th>Kiểm tra</th></tr></thead><tbody>{validation.records.slice(0, 12).map((record, index) => { const rowNumber = record.sourceRow ?? 0; return <tr className={errors.has(rowNumber) ? 'invalid-row' : ''} key={`${rowNumber}-${index}`}><td>{rowNumber}</td>{previewFields.map(key => <td key={key}>{String(record[key] ?? '')}</td>)}<td>{errors.get(rowNumber)?.join('; ') || '✓ Hợp lệ'}</td></tr> })}</tbody></table></div>{!!validation.ignoredRows.length && <div className="ignored">Bỏ qua {validation.ignoredRows.length} dòng tiêu đề/tổng không có Mã HP.</div>}<div className="confirm-row"><span>Dữ liệu chỉ thay đổi sau khi xác nhận.</span><button className="confirm" disabled={!courseCodeMapped || !validation.records.length || !!validation.issues.length} onClick={onConfirm}>Xác nhận và cập nhật CSDL</button></div></section>;
 }
 
-function Timetable({ schedule, courseColors, rowHeight }: { schedule?: Schedule; courseColors: CourseColorAssignments; rowHeight: number }) {
-  const days = [2, 3, 4, 5, 6, 7, 8]; const events = schedule?.sections.flatMap(section => section.meetings.filter(meeting => meeting.occupiesSlot).map(meeting => ({ section, meeting }))) ?? []; const groups = new Map<string, typeof events>(); events.forEach(event => { const key = `${event.meeting.day}-${event.meeting.startPeriod}-${event.meeting.endPeriod}`; groups.set(key, [...(groups.get(key) ?? []), event]) });
-  const tableStyle = { '--period-row-height': `${rowHeight}px` } as CSSProperties;
-  return <div className="table" style={tableStyle}><div className="corner" style={{ gridColumn: 1, gridRow: 1 }}>TIẾT</div>{days.map((day, index) => <div className="day" style={{ gridColumn: index + 2, gridRow: 1 }} key={day}>{day === 8 ? 'CHỦ NHẬT' : `THỨ ${day}`}</div>)}{Array.from({ length: 14 }, (_, index) => index + 1).flatMap(period => [<div className={period >= 13 ? 'period evening-period' : 'period'} style={{ gridColumn: 1, gridRow: period + 1 }} key={`p-${period}`}>{period}</div>, ...days.map((day, index) => <div className={period >= 13 ? 'cell evening-cell' : 'cell'} style={{ gridColumn: index + 2, gridRow: period + 1 }} key={`${day}-${period}`} />)])}{[...groups.entries()].map(([key, items]) => { const first = items[0].meeting; const column = days.indexOf(first.day!) + 2; const length = first.endPeriod! - first.startPeriod! + 1; return <div className="event-group" key={key} style={{ gridColumn: column, gridRow: `${first.startPeriod! + 1} / span ${length}` }}>{items.map(({ section, meeting }) => { const exactTime = meeting.startTime && meeting.endTime ? `${meeting.startTime}–${meeting.endTime}` : ''; const fullLabel = [section.courseCode, section.courseName, section.id, groupDisplay(meeting.group || section.group), meeting.componentType, `Tiết ${meeting.startPeriod}–${meeting.endPeriod}`, exactTime, meeting.room, meeting.lecturer].filter(Boolean).join(' · '); return <div className="event" style={courseStyle(courseColors[section.courseCode])} title={fullLabel} key={meeting.id}><b>{section.courseCode}</b><strong className="event-course-name">{section.courseName}</strong><span>{section.id} · {groupDisplay(meeting.group || section.group)} · {meeting.componentType}</span>{sectionOrigin(section) && <span className="event-origin">{sectionOrigin(section)}</span>}<span>{meeting.slot ? `Ca ${meeting.slot} · ` : ''}Tiết {meeting.startPeriod}–{meeting.endPeriod}</span>{exactTime && <span className="event-clock">⏱ {exactTime}</span>}<span>📍 {meeting.room || 'Chưa có địa điểm'}</span>{meeting.weekExpression && <span>Tuần: {meeting.weekExpression}</span>}<i>{meeting.lecturer || 'Chưa có GV'}</i></div> })}</div> })}</div>;
+function Timetable({
+  schedule,
+  courseColors,
+  rowHeight,
+}: {
+  schedule?: Schedule;
+  courseColors: CourseColorAssignments;
+  rowHeight: number;
+}) {
+  const days = [2, 3, 4, 5, 6, 7, 8];
+
+  const events =
+    schedule?.sections.flatMap((section) =>
+      section.meetings
+        .filter((meeting) => meeting.occupiesSlot)
+        .map((meeting) => ({
+          section,
+          meeting,
+        })),
+    ) ?? [];
+
+  const groups = new Map<string, typeof events>();
+
+  events.forEach((event) => {
+    const key = [
+      event.meeting.day,
+      event.meeting.startPeriod,
+      event.meeting.endPeriod,
+    ].join('-');
+
+    groups.set(key, [...(groups.get(key) ?? []), event]);
+  });
+
+  const tableStyle = {
+    '--period-row-height': `${rowHeight}px`,
+  } as CSSProperties;
+
+  return (
+    <div className="table" style={tableStyle}>
+      <div
+        className="corner"
+        style={{
+          gridColumn: 1,
+          gridRow: 1,
+        }}
+      >
+        TIẾT
+      </div>
+
+      {days.map((day, index) => (
+        <div
+          className="day"
+          style={{
+            gridColumn: index + 2,
+            gridRow: 1,
+          }}
+          key={day}
+        >
+          {day === 8 ? 'CHỦ NHẬT' : `THỨ ${day}`}
+        </div>
+      ))}
+
+      {Array.from({ length: 14 }, (_, index) => index + 1).flatMap(
+        (period) => [
+          <div
+            className={period >= 13 ? 'period evening-period' : 'period'}
+            style={{
+              gridColumn: 1,
+              gridRow: period + 1,
+            }}
+            key={`p-${period}`}
+          >
+            {period}
+          </div>,
+
+          ...days.map((day, index) => (
+            <div
+              className={period >= 13 ? 'cell evening-cell' : 'cell'}
+              style={{
+                gridColumn: index + 2,
+                gridRow: period + 1,
+              }}
+              key={`${day}-${period}`}
+            />
+          )),
+        ],
+      )}
+
+      {[...groups.entries()].map(([key, items]) => {
+        const first = items[0].meeting;
+        const column = days.indexOf(first.day!) + 2;
+        const length = first.endPeriod! - first.startPeriod! + 1;
+
+        return (
+          <div
+            className="event-group"
+            key={key}
+            style={{
+              gridColumn: column,
+              gridRow: `${first.startPeriod! + 1} / span ${length}`,
+            }}
+          >
+            {items.map(({ section, meeting }) => {
+              const exactTime =
+                meeting.startTime && meeting.endTime
+                  ? `${meeting.startTime}–${meeting.endTime}`
+                  : '';
+
+              const fullLabel = [
+                section.courseCode,
+                section.courseName,
+                section.id,
+                groupDisplay(meeting.group || section.group),
+                meeting.componentType,
+                `Tiết ${meeting.startPeriod}–${meeting.endPeriod}`,
+                exactTime,
+                meeting.room,
+                meeting.weekExpression
+                  ? `Tuần ${meeting.weekExpression}`
+                  : '',
+                meeting.lecturer,
+              ]
+                .filter(Boolean)
+                .join(' · ');
+
+              return (
+                <div
+                  className="event"
+                  style={courseStyle(courseColors[section.courseCode])}
+                  title={fullLabel}
+                  key={meeting.id}
+                >
+                  <b>{section.courseCode}</b>
+
+                  <strong className="event-course-name">
+                    {section.courseName}
+                  </strong>
+
+                  <span>
+                    {section.id} ·{' '}
+                    {groupDisplay(meeting.group || section.group)} ·{' '}
+                    {meeting.componentType}
+                  </span>
+
+                  {sectionOrigin(section) && (
+                    <span className="event-origin">
+                      {sectionOrigin(section)}
+                    </span>
+                  )}
+
+                  <span className="event-time-line">
+                    <span>
+                      {meeting.slot ? `Ca ${meeting.slot} · ` : ''}
+                      Tiết {meeting.startPeriod}–{meeting.endPeriod}
+                    </span>
+
+                    {exactTime && (
+                      <span className="event-clock">
+                        · ⏱ {exactTime}
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="event-location-week-line">
+                    <span className="event-room">
+                      📍 {meeting.room || 'Chưa có địa điểm'}
+                    </span>
+
+                    {meeting.weekExpression && (
+                      <span className="event-week">
+                        Tuần: {meeting.weekExpression}
+                      </span>
+                    )}
+                  </span>
+
+                  <i>GV: {meeting.lecturer || 'Chưa có'}</i>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function OnlineMeetings({ schedule, courseColors }: { schedule: Schedule; courseColors: CourseColorAssignments }) { return <div className="online">{schedule.sections.flatMap(section => section.meetings.filter(meeting => !meeting.occupiesSlot).map(meeting => <span className="online-course" style={courseStyle(courseColors[section.courseCode])} key={meeting.id}><b>{section.courseCode} · {section.courseName}</b> · {section.id} · {groupDisplay(meeting.group || section.group)}{sectionOrigin(section) && <> · {sectionOrigin(section)}</>} · {meeting.componentType || 'Không xếp ca'} · {meeting.lecturer}</span>))}</div> }

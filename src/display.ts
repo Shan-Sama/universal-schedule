@@ -10,7 +10,12 @@ export function groupDisplay(value: string) {
 }
 
 export function sectionOrigin(section: Section) {
-  return [section.targetClass && `Lớp/Khóa: ${section.targetClass}`, section.schoolFaculty && `Trường/Viện/Khoa: ${section.schoolFaculty}`].filter(Boolean).join(' · ');
+  return [
+    section.targetClass && `LK: ${section.targetClass}`,
+    section.schoolFaculty && `TVK: ${section.schoolFaculty}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 export function meetingCompact(meeting: Meeting) {

@@ -1,75 +1,368 @@
-# TKB Universal V2.3.1 – UET/VNU + HUST
+# TKB Universal V2.4
 
-Ứng dụng React + TypeScript + Vite đọc Excel thời khóa biểu UET/VNU hoặc HUST, cho người dùng kiểm tra matching trước khi xác nhận dữ liệu, rồi tìm tối đa 200 tổ hợp lớp học phần không trùng lịch. Mọi xử lý diễn ra trong trình duyệt; file Excel không được gửi lên máy chủ.
+Ứng dụng tạo thời khóa biểu cho dữ liệu **UET/VNU, HUST và các file Excel có cấu trúc tương tự**. Người dùng được kiểm tra lại việc matching cột trước khi nhập dữ liệu, chọn nhiều lớp có thể học, đặt điều kiện nghỉ và tạo tối đa 200 phương án không trùng lịch.
 
-## Các điểm mới trong V2.3.1
+> Website: [https://shan-sama.github.io/universal-schedule/](https://shan-sama.github.io/universal-schedule/)
 
-- Bộ **20 màu pastel** được cấp ngẫu nhiên từ các màu chưa dùng. Hai môn đang được chọn không bao giờ nhận cùng một màu.
-- Môn **Tạm không xếp** vẫn giữ màu; chỉ khi xóa môn thì màu mới được trả về kho để cấp cho môn khác.
-- Nếu chọn quá 20 môn, ứng dụng tự sinh thêm màu pastel không trùng thay vì lặp lại bảng màu.
+File Excel được xử lý ngay trong trình duyệt và không được gửi lên máy chủ.
 
-- Mỗi môn đã lưu có nút **Chọn tất cả** và **Bỏ chọn tất cả** để thao tác nhanh toàn bộ section.
-- Môn bỏ chọn hết section chuyển sang **Tạm không xếp**: vẫn được lưu trong danh sách nhưng không tham gia backtracking, và không làm chặn các môn còn lại.
-- Màu của học phần được dùng đồng nhất trong danh sách môn, khu môn đã chọn và card trên TKB.
+## Mục lục
 
-- Ba chế độ màu **Sáng / Tối / System**; lựa chọn được nhớ trên trình duyệt.
-- Sửa dứt điểm lỗi số tiết 1–12 nhảy sang cột Thứ: mọi nhãn, ô và card đều có tọa độ lưới riêng.
-- Danh sách môn gọn theo hàng, có tìm kiếm, phân trang và nút `‹ ›`.
-- Chọn cố định 10 hoặc 20 dòng mỗi trang; trang cuối được bù khoảng trống nên cụm `‹ ›` không nhảy vị trí.
-- Các môn đã tick xuất hiện trong khu **Môn đã chọn** để bỏ môn hoặc sửa section ngay tại chỗ.
-- Một môn có nhiều lớp/section: mở **Chọn lớp**, tick tất cả section bạn có thể học; thuật toán tự MIX một section phù hợp cho mỗi môn.
-- Tối đa **200 phương án khác nhau** bằng backtracking.
-- Nút `‹ ›`, hộp chọn và phím mũi tên trái/phải để duyệt phương án.
-- Lọc nâng cao: nghỉ bất kỳ ngày T2–T7, nghỉ bất kỳ Ca 1–4, chỉ học sáng hoặc chỉ học chiều.
-- Sau khi đã xác nhận Excel vẫn có thể bấm **← Sửa matching** để quay lại bước 2. CSDL hiện tại chỉ đổi khi xác nhận lại.
-- Nút **In / Lưu PDF** dùng chức năng Print của trình duyệt. PDF là text/vector, nhẹ hơn và có thể chọn, sao chép hoặc tìm kiếm chữ.
-- Nếu file thiếu Kỳ học, ô nhập kỳ nằm ngay đầu phần kiểm tra; danh sách lỗi dài được giới hạn chiều cao và có thanh cuộn.
-- Nhận và chuẩn hóa `Trường_Viện_Khoa` của HUST thành `schoolFaculty`; chấp nhận cả biến thể `Trường_Việt_Khoa`.
-- Mỗi Mã LHP hiển thị kèm Lớp/Khóa và Trường/Viện/Khoa trong bộ chọn section, danh sách môn đã chọn và card lịch.
-- Bảng preview cố định Dòng, Kỳ, Mã HP, Tên học phần, Mã LHP bên trái và cột Kiểm tra bên phải; các cột giữa cuộn ngang độc lập.
-- Giữ toàn bộ chức năng đọc UET/VNU + HUST của V1.4: chọn sheet, nhận diện header, Ca, Tiết, KT/Kíp, tuần chẵn/lẻ và nhiều giảng viên.
+- [Tính năng chính](#tính-năng-chính)
+- [Sử dụng nhanh trên website](#sử-dụng-nhanh-trên-website)
+- [Hướng dẫn chi tiết](#hướng-dẫn-chi-tiết)
+- [Dữ liệu thời gian được hỗ trợ](#dữ-liệu-thời-gian-được-hỗ-trợ)
+- [Chèn ảnh minh họa vào README](#chèn-ảnh-minh-họa-vào-readme)
+- [Chạy project bằng VS Code](#chạy-project-bằng-vs-code)
+- [Đưa project lên GitHub](#đưa-project-lên-github)
+- [Triển khai GitHub Pages](#triển-khai-github-pages)
+- [Xử lý lỗi thường gặp](#xử-lý-lỗi-thường-gặp)
+- [Cấu trúc project](#cấu-trúc-project)
 
-## 1. Chuẩn bị máy
+## Tính năng chính
 
-Cài ba phần mềm:
+- Đọc file `.xlsx` và `.xls` bằng SheetJS.
+- Tự nhận diện sheet, dòng header và định dạng UET/VNU hoặc HUST.
+- Cho phép người dùng matching lại từng cột trước khi cập nhật dữ liệu.
+- Giữ toàn bộ cột nguồn trong `sourceData`, kể cả cột không dùng để xếp lịch.
+- Hỗ trợ Ca, Tiết, BĐ/KT, Kíp Sáng/Chiều, tuần chẵn/lẻ và nhiều giảng viên.
+- Gom dữ liệu theo `Mã HP → Mã LHP → Meeting`.
+- Nhận diện `CL` là cả lớp và tách `N1/N2/N3` thành các lựa chọn BT/TH/TN thay thế nhau.
+- Một môn có thể chọn nhiều section có thể học để hệ thống tự MIX.
+- Bỏ chọn toàn bộ section sẽ chuyển môn sang **Tạm không xếp**, không xóa môn.
+- Tạo tối đa 200 phương án bằng backtracking.
+- Lọc nghỉ ngày, nghỉ ca, chỉ học sáng hoặc chỉ học chiều.
+- Mỗi môn nhận một màu pastel riêng, không trùng với môn đang chọn khác.
+- Tìm kiếm không dấu theo mã, tên Việt, tên Anh, lớp và giảng viên.
+- Hiển thị T2–T7 × tiết 1–12, kèm tên môn, nhóm, phòng, giảng viên, Lớp/Khóa và Trường/Viện/Khoa; chữ trong card có thể bôi đen để copy.
+- In hoặc lưu PDF dạng text/vector bằng chức năng Print của trình duyệt.
+- Có ba giao diện **Sáng / Tối / System**.
+- Nút **Hướng dẫn** đọc nội dung ngắn gọn từ `public/HUONG_DAN.md`, hỗ trợ ảnh minh họa.
 
-1. [Node.js LTS](https://nodejs.org/) – khuyến nghị Node 20 trở lên.
-2. [Visual Studio Code](https://code.visualstudio.com/).
-3. [Git](https://git-scm.com/downloads).
+## Sử dụng nhanh trên website
 
-Mở PowerShell hoặc Terminal và kiểm tra:
+1. Mở [TKB Universal](https://shan-sama.github.io/universal-schedule/).
+2. Bấm **Chọn file Excel** hoặc **Dùng dữ liệu mock**.
+3. Chọn đúng sheet và kiểm tra matching.
+4. Nhập **Kỳ học** nếu file không có cột kỳ.
+5. Bấm **Xác nhận và cập nhật CSDL**.
+6. Tick môn cần học và các section có thể đăng ký.
+7. Chọn bộ lọc nếu cần.
+8. Bấm **Tính tối đa 200 lịch MIX**.
+9. Duyệt các phương án và chọn **In / Lưu PDF**.
 
-```powershell
-node --version
-npm --version
-git --version
+Ngay trong ứng dụng, bấm **? Hướng dẫn** ở góc trên để xem bản hướng dẫn ngắn. Nội dung này được lấy từ `public/HUONG_DAN.md`; ảnh đặt trong `public/guide-images/`.
+
+## Hướng dẫn chi tiết
+
+### Bước 1 – Chọn dữ liệu nguồn
+
+- Bấm **Chọn file Excel** để nạp file `.xlsx` hoặc `.xls`.
+- Nếu chỉ muốn thử ứng dụng, bấm **Dùng dữ liệu mock**.
+- Chọn file mới chưa làm thay đổi CSDL hiện tại. Dữ liệu chỉ được cập nhật sau bước xác nhận matching.
+
+Ảnh nên chụp cho bước này:
+
+```text
+docs/images/01-chon-du-lieu.png
 ```
 
-Nếu cả ba lệnh đều hiện phiên bản, máy đã sẵn sàng.
+Mẫu chèn ảnh ngay dưới đoạn hướng dẫn:
 
-## 2. Mở project bằng VS Code và chạy V2.3.1
+```markdown
+![Bước 1 - Chọn file Excel](docs/images/01-chon-du-lieu.png)
+```
 
-1. Giải nén file ZIP.
+### Bước 2 – Chọn sheet và matching cột
+
+1. Chọn sheet lịch tại mục **Sheet đang đọc**.
+2. Kiểm tra định dạng được nhận diện: `UET/VNU`, `HUST` hoặc `Chung`.
+3. Kiểm tra các nhóm trường:
+   - Nhận dạng học phần.
+   - Thời gian học.
+   - Địa điểm và con người.
+   - Khối lượng và ghi chú.
+4. Chỉ `Mã HP` là bắt buộc tuyệt đối.
+5. Nếu file không có `Kỳ học`, nhập kỳ áp dụng chung, ví dụ `20261`.
+6. Kiểm tra bảng **Tất cả cột nguồn**. Số cột phải tương ứng với file Excel.
+
+Các trường thường dùng:
+
+| Trường chuẩn | Header nguồn thường gặp |
+|---|---|
+| `semester` | Kỳ học, Học kỳ |
+| `targetClass` | Lớp, Lớp/Khóa |
+| `schoolFaculty` | Trường_Viện_Khoa, Trường_Việt_Khoa |
+| `courseCode` | Mã HP, Mã học phần |
+| `courseName` | Môn, Tên học phần |
+| `sectionId` | Mã LHP, Mã lớp |
+| `componentType` | LT/BT/TH, Loại lớp |
+| `day` | Thứ |
+| `slot` | Ca |
+| `startPeriod` | Tiết bắt đầu, BĐ |
+| `endPeriod` | Tiết kết thúc, KT |
+| `shift` | Kíp, Sáng/Chiều |
+| `weekExpression` | Tuần học, Ghi chú học |
+| `room` | GĐ, Phòng, Địa điểm học |
+| `lecturer` | Giảng viên |
+
+Ảnh nên chụp:
+
+```text
+docs/images/02-matching-cot.png
+```
+
+### Bước 3 – Kiểm tra dữ liệu sau matching
+
+- Xem bảng **Xem trước sau matching** trước khi xác nhận.
+- Các cột nhận dạng quan trọng được cố định bên trái.
+- Cột **Kiểm tra** được cố định bên phải.
+- Dùng thanh cuộn ngang để xem các cột thời gian, phòng và giảng viên ở giữa.
+- Nếu có lỗi, ứng dụng hiển thị chính xác số dòng Excel cần kiểm tra.
+- Dòng tiêu đề nhóm hoặc dòng tổng không có Mã HP được bỏ qua và không được nhập thành môn học.
+
+Khi dữ liệu đúng, bấm **Xác nhận và cập nhật CSDL**.
+
+Ảnh nên chụp:
+
+```text
+docs/images/03-xem-truoc-matching.png
+```
+
+### Bước 4 – Chọn môn và section có thể học
+
+1. Tick môn cần đăng ký.
+2. Bấm **Chọn lớp** để mở danh sách section.
+3. Tick tất cả section bạn có thể học.
+4. Hệ thống sẽ tự chọn một section phù hợp của mỗi môn khi MIX.
+
+Quy ước nhóm:
+
+- `CL`: cả lớp, thường là buổi lý thuyết chung.
+- `N1`, `N2`, `N3`: các nhóm BT/TH/TN thay thế nhau. Hệ thống ghép buổi `CL` với đúng một nhóm đã chọn, không bắt học đồng thời N1 và N2.
+
+Trong khu **Môn đã chọn**:
+
+- **Chọn tất cả:** bật nhanh toàn bộ section của môn.
+- **Bỏ chọn tất cả:** giữ môn nhưng chuyển sang **Tạm không xếp**.
+- Nút `×`: xóa hoàn toàn môn khỏi danh sách đã chọn.
+
+Môn tạm không xếp vẫn giữ màu và các section đã lưu. Khi bật lại section, môn tiếp tục tham gia xếp lịch.
+
+Ảnh nên chụp:
+
+```text
+docs/images/04-chon-mon-va-lop.png
+```
+
+### Bước 5 – Lọc nâng cao và tạo lịch
+
+Các bộ lọc gồm:
+
+- **Nghỉ ngày:** chọn một hoặc nhiều ngày T2–T7.
+- **Nghỉ ca:** chọn một hoặc nhiều Ca 1–4.
+- **Chỉ học sáng:** tất cả buổi học phải nằm trong tiết 1–6.
+- **Chỉ học chiều:** tất cả buổi học phải nằm trong tiết 7–12.
+
+Bấm **Tính tối đa 200 lịch MIX**. Nếu không có kết quả, phần thông báo sẽ cho biết môn nào hết section phù hợp hoặc nhóm lớp nào bị trùng lịch.
+
+### Bước 6 – Duyệt và xuất thời khóa biểu
+
+- Dùng nút `‹ ›`, hộp **Phương án N/M** hoặc phím mũi tên trái/phải.
+- Các buổi cùng môn dùng cùng một màu pastel.
+- Card lịch hiển thị Mã HP, tên môn tiếng Việt, Mã LHP, nhóm, loại buổi, Lớp/Khóa, Trường/Viện/Khoa, tiết, phòng, tuần học và giảng viên.
+- Có thể kéo chuột bôi đen chữ trong card để copy như văn bản thông thường.
+- ONL hoặc dòng thiếu Thứ/thời gian nằm dưới bảng và không chiếm ô.
+
+Để lưu PDF:
+
+1. Bấm **In / Lưu PDF**.
+2. Trong hộp Print, chọn **Save as PDF** hoặc **Microsoft Print to PDF**.
+3. Chọn khổ ngang nếu trình duyệt chưa tự đặt.
+4. Bấm **Save**.
+
+Ảnh nên chụp:
+
+```text
+docs/images/05-ket-qua-tkb.png
+```
+
+## Dữ liệu thời gian được hỗ trợ
+
+### UET/VNU – Ca
+
+| Ca | Tiết |
+|---:|---:|
+| 1 | 1–3 |
+| 2 | 4–6 |
+| 3 | 7–9 |
+| 4 | 10–12 |
+
+Một ô Ca có thể chứa nhiều giá trị:
+
+```text
+1,2       → tiết 1–3 và 4–6
+1 - 2     → Ca 1 và Ca 2
+```
+
+### File dùng cột Tiết
+
+```text
+1-5             → tiết 1 đến 5
+1 - 5, 7 - 9    → hai khoảng tiết
+```
+
+Khoảng trắng quanh dấu `-` được chấp nhận.
+
+### HUST – BĐ, KT và Kíp
+
+- Kíp Sáng: KT 1–6 tương ứng tiết 1–6.
+- Kíp Chiều: hệ thống cộng 6; BĐ 1, KT 3 thành tiết 7–9.
+- Một ngày có tổng cộng 12 KT tương ứng 12 tiết.
+
+### Tuần học
+
+```text
+2-9,11-18       → tuần 2 đến 9 và 11 đến 18
+Học tuần chẵn   → 2, 4, 6, ...
+Học tuần lẻ     → 1, 3, 5, ...
+```
+
+Hai buổi cùng Thứ và tiết nhưng không giao tuần có thể xen kẽ và không bị coi là xung đột.
+
+### Nhiều giảng viên
+
+Các dấu sau đều có thể tách nhiều giảng viên:
+
+```text
+,  +  &  ;  |  hoặc xuống dòng
+```
+
+## Chèn ảnh minh họa vào README
+
+### 1. Tạo thư mục ảnh
+
+Trong project, tạo cấu trúc:
+
+```text
+docs/
+└─ images/
+   ├─ 01-chon-du-lieu.png
+   ├─ 02-matching-cot.png
+   ├─ 03-xem-truoc-matching.png
+   ├─ 04-chon-mon-va-lop.png
+   └─ 05-ket-qua-tkb.png
+```
+
+Tên file nên:
+
+- Viết thường.
+- Không dấu.
+- Không chứa khoảng trắng.
+- Có số thứ tự để ảnh hiển thị đúng trình tự.
+
+### 2. Chụp và lưu ảnh
+
+Trên Windows:
+
+1. Mở đúng màn hình cần minh họa.
+2. Nhấn `Windows + Shift + S`.
+3. Kéo chọn khu vực quan trọng.
+4. Lưu dưới dạng PNG vào `docs/images`.
+5. Không chụp dữ liệu cá nhân, mã sinh viên, email hoặc thông tin nhạy cảm.
+
+### 3. Chèn ảnh bằng Markdown
+
+Đặt dòng sau tại vị trí muốn hiển thị:
+
+```markdown
+![Mô tả nội dung ảnh](docs/images/01-chon-du-lieu.png)
+```
+
+Ví dụ:
+
+```markdown
+### Bước 1 – Chọn dữ liệu nguồn
+
+Bấm **Chọn file Excel** để nạp thời khóa biểu.
+
+![Giao diện chọn file Excel](docs/images/01-chon-du-lieu.png)
+```
+
+### 4. Căn giữa và giới hạn chiều rộng
+
+GitHub hỗ trợ HTML trong README:
+
+```html
+<p align="center">
+  <img src="docs/images/01-chon-du-lieu.png"
+       alt="Giao diện chọn file Excel"
+       width="900" />
+</p>
+```
+
+Nên dùng `width="800"` đến `width="1100"` cho ảnh chụp màn hình máy tính.
+
+### 5. Những đường dẫn không nên dùng
+
+Không dùng đường dẫn chỉ tồn tại trên máy cá nhân:
+
+```markdown
+![Sai](C:\Users\admin\Desktop\anh.png)
+```
+
+Không dùng dấu `\` của Windows trong đường dẫn README:
+
+```markdown
+![Sai](docs\images\anh.png)
+```
+
+Luôn dùng đường dẫn tương đối và dấu `/`:
+
+```markdown
+![Đúng](docs/images/anh.png)
+```
+
+GitHub phân biệt chữ hoa và chữ thường. `Anh.PNG` và `anh.png` có thể được xem là hai tên khác nhau.
+
+### 6. Đẩy ảnh lên GitHub
+
+Sau khi thêm ảnh:
+
+```powershell
+git add README.md docs/images
+git commit -m "docs: thêm ảnh hướng dẫn sử dụng"
+git push
+```
+
+Mở lại trang repository để kiểm tra ảnh. Nếu ảnh không hiện, kiểm tra tên file, phần mở rộng và chữ hoa/chữ thường.
+
+## Chạy project bằng VS Code
+
+### Yêu cầu
+
+- [Node.js 24](https://nodejs.org/) hoặc bản mới hơn tương thích.
+- [Visual Studio Code](https://code.visualstudio.com/).
+- [Git](https://git-scm.com/downloads).
+
+### Cài đặt
+
+1. Giải nén project.
 2. Mở VS Code.
 3. Chọn **File → Open Folder…**.
-4. Chọn đúng thư mục `tkb-universal-v2.3.1`, tức thư mục đang chứa `package.json`.
-5. Chọn **Terminal → New Terminal**.
-6. Cài thư viện:
+4. Chọn thư mục chứa `package.json`.
+5. Mở **Terminal → New Terminal**.
+
+Chạy bằng npm:
 
 ```powershell
 npm install
-```
-
-7. Chạy ứng dụng:
-
-```powershell
 npm run dev
 ```
 
-8. Terminal hiện địa chỉ tương tự `http://localhost:5173`. Giữ Terminal chạy và mở địa chỉ đó trong trình duyệt.
-9. Khi muốn dừng, quay lại Terminal và nhấn `Ctrl+C`.
+Mở địa chỉ Terminal hiển thị, thường là `http://localhost:5173`.
 
-Các lệnh kiểm tra bản production:
+Các lệnh kiểm tra:
 
 ```powershell
 npm run test
@@ -77,227 +370,163 @@ npm run build
 npm run preview
 ```
 
-- `npm run test`: chạy bộ kiểm thử parser và scheduler.
-- `npm run build`: kiểm tra TypeScript và tạo thư mục `dist`.
-- `npm run preview`: xem thử chính bản production vừa build.
+Project có cả `package-lock.json` và `pnpm-lock.yaml`. Không nên chạy đồng thời npm và pnpm trong cùng một lần cài đặt.
 
-Project cũng có `pnpm-lock.yaml`. Nếu quen pnpm, có thể thay `npm` bằng `pnpm`.
+## Đưa project lên GitHub
 
-## 3. Cách sử dụng – từ Excel tới lịch hoàn chỉnh
-
-### Bước 1 – Chọn nguồn
-
-- Bấm **Chọn file Excel** để nạp `.xlsx` hoặc `.xls`.
-- Hoặc bấm **Dùng dữ liệu mock** để mô phỏng ngay.
-- Việc chọn file chưa ghi đè CSDL đang dùng.
-
-### Bước 2 – Chọn sheet và matching
-
-1. Nếu workbook có nhiều sheet, chọn đúng sheet lịch trong hộp **Sheet đang đọc**.
-2. Xem định dạng đang được nhận diện là `UET/VNU`, `HUST` hay `Chung`.
-3. Kiểm tra bốn nhóm matching:
-   - Nhận dạng học phần.
-   - Thời gian học.
-   - Địa điểm và con người.
-   - Khối lượng và ghi chú.
-4. Chỉ `Mã HP` là bắt buộc. Nếu thiếu tên môn hoặc Mã LHP, hệ thống có thể tạo giá trị dự phòng.
-5. Bảng **Tất cả cột nguồn** phải liệt kê đủ cột A, B, C… trong sheet. Cột không dùng cho thuật toán vẫn được giữ trong `sourceData`.
-6. Nếu file không có cột `Kỳ học`, nhập kỳ áp dụng chung, ví dụ `20261`.
-7. Nếu thiếu Kỳ học, nhập ngay ở ô cảnh báo phía trên. Danh sách lỗi nêu rõ **số dòng Excel** và có thanh cuộn khi quá dài.
-8. Bấm **Xác nhận và cập nhật CSDL**.
-
-Sau này, từ bước chọn môn, bấm **← Sửa matching** để quay lại đây. Nếu đổi ý, dữ liệu cũ vẫn còn cho tới khi xác nhận lại.
-
-### Bước 3 – Chọn môn và các lớp có thể học
-
-1. Tick các học phần cần đăng ký.
-2. Với môn có nhiều section, bấm **Chọn lớp**.
-3. Tick tất cả section bạn có thể học. Ví dụ môn Triết học có 8 lớp nhưng bạn chỉ học được 4 lớp, hãy tick đúng 4 lớp đó.
-4. Thuật toán sẽ chọn đúng **một section của mỗi môn** và MIX giữa các section đã cho phép.
-5. Dùng ô tìm kiếm theo mã, tên hoặc giảng viên. Dùng `‹ ›` dưới danh sách để chuyển trang môn.
-
-### Bước 4 – Lọc nâng cao
-
-- **Nghỉ ngày:** có thể tick T4, T7 hoặc nhiều ngày cùng lúc.
-- **Nghỉ ca:** Ca 1 = tiết 1–3, Ca 2 = 4–6, Ca 3 = 7–9, Ca 4 = 10–12.
-- **Chỉ học sáng:** mọi buổi phải nằm trọn trong tiết 1–6.
-- **Chỉ học chiều:** mọi buổi phải nằm trọn trong tiết 7–12.
-- Bấm **Đặt lại** để bỏ toàn bộ bộ lọc.
-
-Bộ lọc loại section không phù hợp trước khi backtracking. Nếu một môn không còn section nào, diagnostics sẽ nêu đúng mã môn và đề nghị chọn thêm section hoặc nới bộ lọc.
-
-### Bước 5 – Tính và duyệt lịch
-
-1. Bấm **Tính tối đa 200 lịch MIX**.
-2. Dùng nút `‹ ›`, danh sách **Phương án N/M**, hoặc phím mũi tên trái/phải.
-3. Mỗi card lịch hiện mã môn, Mã LHP, LT/BT/TH, Ca, tiết, phòng, tuần học và giảng viên.
-4. ONL hoặc dòng thiếu Thứ/thời gian vẫn nằm trong section nhưng được liệt kê dưới bảng và không chiếm ô.
-5. Bấm **In / Lưu PDF**. Trong hộp Print của trình duyệt, chọn máy in **Save as PDF / Microsoft Print to PDF** rồi lưu file. Nội dung là text thật, không phải ảnh pixel.
-
-## 4. Dữ liệu thời gian được hiểu như thế nào?
-
-### UET/VNU – Ca
-
-```text
-Ca 1 → tiết 1–3
-Ca 2 → tiết 4–6
-Ca 3 → tiết 7–9
-Ca 4 → tiết 10–12
-```
-
-Một ô `Ca` có thể chứa nhiều giá trị:
-
-```text
-1,2     → hai Meeting: tiết 1–3 và 4–6
-1 - 2   → Ca 1 và Ca 2
-```
-
-### HUST hoặc file dùng cột Tiết
-
-```text
-1-5             → một Meeting tiết 1 đến 5
-1 - 5, 7 - 9    → hai Meeting; khoảng trắng quanh dấu - được chấp nhận
-```
-
-### HUST – BĐ / KT / Kíp
-
-- Kíp Sáng: KT 1–6 tương ứng tiết 1–6.
-- Kíp Chiều: tự cộng 6; BĐ 1, KT 3 thành tiết 7–9.
-- Cả ngày vẫn dùng 12 KT = 12 tiết.
-
-### Tuần học
-
-```text
-2-9,11-18       → tuần 2..9 và 11..18
-Học tuần chẵn   → 2,4,6,…
-Học tuần lẻ     → 1,3,5,…
-```
-
-Hai buổi cùng Thứ và tiết nhưng không giao tuần có thể xen kẽ và không bị coi là xung đột.
-
-### Giảng viên
-
-Các dấu `,`, `+`, `&`, `;`, `|` hoặc xuống dòng đều được dùng để tách nhiều giảng viên, trong khi chuỗi gốc vẫn được giữ để hiển thị.
-
-## 5. Schema chuẩn nội bộ
-
-Schema lõi gồm:
-
-```text
-semester, targetClass, schoolFaculty, expectedSemester, courseCode, courseName, credits,
-sectionId, group, componentType, day, slot, startPeriod, endPeriod,
-room, lecturer, capacity, lectureHours, practiceHours, note
-```
-
-V2.3.1 bổ sung metadata cần cho dữ liệu đa trường:
-
-```text
-shift, weekExpression, weeks, lecturers,
-sourceRow, sourceData
-```
-
-`periodExpression` là trường matching đầu vào; sau khi chuẩn hóa nó được chuyển thành `startPeriod` và `endPeriod`.
-
-Luồng dữ liệu:
-
-```text
-Excel → nhận diện sheet/header → người dùng kiểm tra matching
-      → CanonicalRecord → Course → Section → Meeting
-      → lọc section → backtracking → tối đa 200 Schedule
-```
-
-## 6. Mỗi file làm gì?
-
-```text
-tkb-universal-v2.3.1/
-├─ .github/workflows/deploy.yml  Kiểm thử, build và deploy GitHub Pages
-├─ src/
-│  ├─ App.tsx                    Toàn bộ luồng UI V2.3.1
-│  ├─ courseColors.ts           Cấp ngẫu nhiên màu pastel không trùng
-│  ├─ courseColors.test.ts      3 kiểm thử riêng cho bộ cấp màu
-│  ├─ parser.ts                 Đọc Excel, header, matching, chuẩn hóa
-│  ├─ scheduler.ts              Gom dữ liệu, lọc và backtracking
-│  ├─ mock.ts                   Dữ liệu mô phỏng ELT3297
-│  ├─ types.ts                  Schema TypeScript
-│  ├─ scheduler.test.ts         21 kiểm thử parser + scheduler
-│  ├─ styles.css                Theme và bố cục responsive
-│  └─ main.tsx                  Điểm khởi động React
-├─ vite.config.ts               Cấu hình Vite/GitHub Pages
-└─ package.json                 Thư viện và lệnh npm
-```
-
-Các hàm quan trọng:
-
-- `readExcelWorkbook(file)`: đọc workbook và chấm điểm để gợi ý sheet lịch.
-- `createSheetDraft(source, sheetName)`: tìm header, lấy đủ mọi cột và tự gợi ý mapping.
-- `normalizeDraft(...)`: áp dụng matching, nhập kỳ dự phòng và trả về dữ liệu + lỗi theo dòng.
-- `parseNumberExpression(...)`: hiểu `1 - 5, 7 - 9`.
-- `slotToPeriods(slot)`: đổi Ca 1–4 thành khoảng tiết.
-- `splitLecturers(value)`: tách nhiều giảng viên.
-- `parseWeekExpression(value)`: đọc dải tuần, tuần chẵn/lẻ.
-- `groupRecords(records)`: gom `Mã HP → Mã LHP → Meeting`.
-- `sectionsConflict(a, b)`: kiểm tra chồng Thứ, tiết và tuần.
-- `sectionMatchesFilters(...)`: loại section vi phạm ngày, ca hoặc sáng/chiều.
-- `findSchedules(...)`: MIX các section được tick, không trùng, dừng ở 200 lịch.
-- `Timetable`: dựng lưới có tọa độ cố định T2–T7 × tiết 1–12.
-- `printSchedule()`: gọi Print của trình duyệt; `@media print` dựng bản A4 ngang bằng HTML/CSS để giữ text thật.
-
-## 7. Tạo Git repo và đẩy lên GitHub
-
-Trong Terminal của VS Code, bảo đảm đang đứng tại thư mục chứa `package.json`:
+### Tạo Git repository
 
 ```powershell
 git init
 git add .
-git commit -m "feat: TKB Universal V2.3.1"
+git commit -m "feat: TKB Universal V2.4"
 git branch -M main
 ```
 
-Vào [GitHub – New repository](https://github.com/new), tạo repo tên `tkb-vnu`. Không cần tick tạo README vì project đã có.
+Tạo repository mới tại [github.com/new](https://github.com/new). Không cần chọn tạo README vì project đã có sẵn.
 
-GitHub sẽ cung cấp URL repo. Với HTTPS:
+### Kết nối remote và push
 
 ```powershell
-git remote add origin https://github.com/TEN-CUA-BAN/tkb-vnu.git
+git remote add origin https://github.com/TEN-CUA-BAN/TEN-REPO.git
 git push -u origin main
 ```
 
-Hoặc SSH:
-
-```powershell
-git remote add origin git@github.com:TEN-CUA-BAN/tkb-vnu.git
-git push -u origin main
-```
-
-Thay `TEN-CUA-BAN` bằng username GitHub. Kiểm tra bằng:
-
-```powershell
-git remote -v
-```
-
-Những lần cập nhật sau:
+Các lần cập nhật sau:
 
 ```powershell
 git add .
-git commit -m "mo ta thay doi"
+git commit -m "mô tả thay đổi"
 git push
 ```
 
-## 8. Bật GitHub Pages
+### Cập nhật V2.4 lên repository hiện có, giữ nguyên link
 
-Workflow deploy đã có sẵn:
+Không tạo repository mới và không chạy lại `git init`. Giải nén V2.4, chép các file mới vào đúng thư mục project cũ rồi chạy:
 
-1. Mở repo trên GitHub.
-2. Vào **Settings → Pages**.
-3. Ở **Build and deployment → Source**, chọn **GitHub Actions**.
-4. Mở tab **Actions**, chờ workflow `Deploy GitHub Pages` có dấu xanh.
-5. Link thường có dạng `https://TEN-CUA-BAN.github.io/tkb-vnu/`.
+```powershell
+git remote -v
+git status
+git add .
+git commit -m "feat: update TKB Universal V2.4"
+git push origin main
+```
 
-Workflow tự chạy `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm build` rồi phát hành thư mục `dist`.
+`git remote -v` phải vẫn hiện repository cũ, ví dụ `Shan-Sama/universal-schedule`. Khi push lên cùng nhánh `main`, GitHub Pages sẽ triển khai lại trên **đúng URL cũ**. Không dùng `git remote add origin` lần nữa nếu `origin` đã tồn tại.
 
-## 9. Giới hạn hiện tại
+## Triển khai GitHub Pages
 
-- Mỗi lần xác nhận một sheet; chưa ghép nhiều sheet trong cùng workbook.
-- Dữ liệu nằm trong bộ nhớ trình duyệt; tải lại trang quay về mock.
-- Bố cục Print tối ưu cho A4 ngang; hộp thoại và tên tùy chọn lưu PDF có thể khác nhau giữa Chrome, Edge và Firefox.
-- Backtracking trả về 200 phương án đầu tiên; chưa chấm điểm để ưu tiên lịch ít ngày học hoặc ít khoảng trống.
+Workflow nằm tại `.github/workflows/deploy.yml`.
+
+1. Vào **Settings → Pages**.
+2. Tại **Build and deployment → Source**, chọn **GitHub Actions**.
+3. Vào tab **Actions** trên thanh menu repository.
+4. Chờ workflow **Deploy GitHub Pages** có dấu xanh.
+5. Mở đường dẫn trong **Settings → Pages → Visit site**.
+
+Workflow dùng:
+
+```yaml
+- uses: actions/setup-node@v4
+  with:
+    node-version: 24
+    cache: pnpm
+```
+
+pnpm 11 yêu cầu Node.js từ 22.13 trở lên. Không đặt `node-version: 20`, vì workflow sẽ lỗi tại bước `actions/setup-node`.
+
+Website thường có dạng:
+
+```text
+https://TEN-CUA-BAN.github.io/TEN-REPO/
+```
+
+## Xử lý lỗi thường gặp
+
+### Workflow báo pnpm yêu cầu Node.js 22.13
+
+Nguyên nhân: workflow đang dùng Node.js 20 với pnpm 11.
+
+Sửa `.github/workflows/deploy.yml`:
+
+```yaml
+node-version: 24
+```
+
+Commit và push thay đổi. Không chỉ chạy lại workflow cũ vì workflow cũ vẫn dùng cấu hình của commit cũ.
+
+### Không thấy đủ cột Excel
+
+- Kiểm tra đã chọn đúng sheet chưa.
+- Kiểm tra dòng header thực sự trong file.
+- Xem mục **Tất cả cột nguồn** trước khi matching.
+
+### Không xác nhận được CSDL
+
+- Kiểm tra `Mã HP` đã được map.
+- Nhập Kỳ học nếu file không có cột kỳ.
+- Mở danh sách dòng lỗi và kiểm tra đúng số dòng Excel được báo.
+
+### Không tìm được lịch
+
+- Kiểm tra có môn nào đang **Tạm không xếp** không.
+- Chọn thêm section cho các môn.
+- Bỏ bớt điều kiện nghỉ ngày hoặc nghỉ ca.
+- Kiểm tra tuần học và khoảng tiết đã matching đúng.
+
+### GitHub Pages hiện 404
+
+- Đợi 1–2 phút sau khi workflow xanh.
+- Nhấn `Ctrl + F5`.
+- Kiểm tra **Settings → Pages → Source = GitHub Actions**.
+- Kiểm tra URL có đúng tên repository hay không.
+
+## Cấu trúc project
+
+```text
+tkb-universal-v2.4/
+├─ .github/workflows/deploy.yml  Build và triển khai GitHub Pages
+├─ docs/images/                  Ảnh minh họa cho README
+├─ public/
+│  ├─ HUONG_DAN.md               Hướng dẫn ngắn hiển thị trong ứng dụng
+│  └─ guide-images/              Ảnh của hướng dẫn trong ứng dụng
+├─ src/
+│  ├─ App.tsx                    Luồng giao diện chính
+│  ├─ GuideModal.tsx             Đọc và hiển thị HUONG_DAN.md
+│  ├─ display.ts                Tìm kiếm không dấu và định dạng thông tin buổi
+│  ├─ parser.ts                 Đọc Excel và chuẩn hóa dữ liệu
+│  ├─ scheduler.ts              Lọc section và backtracking
+│  ├─ courseColors.ts           Cấp màu pastel không trùng
+│  ├─ mock.ts                   Dữ liệu mô phỏng
+│  ├─ types.ts                  Schema TypeScript
+│  ├─ scheduler.test.ts         Kiểm thử parser và scheduler
+│  ├─ courseColors.test.ts      Kiểm thử bộ cấp màu
+│  ├─ styles.css                Giao diện và bản in
+│  └─ main.tsx                  Điểm khởi động React
+├─ README.md
+├─ package.json
+└─ vite.config.ts
+```
+
+## Schema chuẩn nội bộ
+
+```text
+semester, targetClass, schoolFaculty, expectedSemester,
+courseCode, courseName, courseNameEnglish, credits, sectionId, group,
+componentType, day, slot, startPeriod, endPeriod,
+room, lecturer, capacity, lectureHours, practiceHours, note,
+shift, weekExpression, weeks, lecturers, sourceRow, sourceData
+```
+
+## Kiểm thử
+
+```powershell
+npm run test
+npm run build
+```
+
+Phiên bản V2.4 hiện có 27 kiểm thử tự động cho parser, scheduler, tìm kiếm và bộ cấp màu.
+
+## Bản quyền
+
+© 2026 dtkyne · Vietnam National University, Hanoi.

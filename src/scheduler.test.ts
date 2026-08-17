@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import {mockRecords} from './mock';
 import {findSchedules,groupRecords,MAX_SCHEDULES,sectionsConflict} from './scheduler';
 import {createSheetDraft,fieldDefinitions,normalizeRows,parseNumberExpression,parseWeekExpression,readExcelWorkbook,slotToPeriods,splitLecturers} from './parser';
+import {normalizeSearchText} from './display';
 import type {Course} from './types';
 
 describe('Universal scheduler',()=>{
@@ -19,6 +20,9 @@ describe('Universal scheduler',()=>{
   it('tách giảng viên theo nhiều dấu nối',()=>{
     expect(splitLecturers('Nguyễn A + Trần B, Lê C & Phạm D; Vũ E')).toEqual(['Nguyễn A','Trần B','Lê C','Phạm D','Vũ E']);
   });
+  it('tìm tiếng Việt không dấu không phân biệt chữ hoa thường',()=>{
+    expect(normalizeSearchText('Kỹ thuật xử lý')).toBe('ky thuat xu ly');
+  });
   it('chọn đúng sheet lịch và header không nằm ở dòng 1',async()=>{
     const workbook=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([['Khóa','Lớp','HK dự kiến','Mã HP','Môn'],['K71','K71I',1,'UET.COM1050','Tư duy']]),'Tiến trình');
@@ -29,6 +33,10 @@ describe('Universal scheduler',()=>{
   it('giữ Trường/Viện/Khoa trên section để hiển thị cùng Mã LHP',()=>{
     const records=normalizeRows([{'Mã_HP':'AC2010','Tên_HP':'Kỹ thuật lập trình','Mã_lớp':'174410','Lớp SV':'K67','Trường_Viện_Khoa':'Trường Điện - Điện tử'}],'20261');
     const section=groupRecords(records)[0].sections[0];expect(section).toMatchObject({id:'174410',targetClass:'K67',schoolFaculty:'Trường Điện - Điện tử'});
+  });
+  it('match và giữ tên học phần tiếng Anh của HUST',()=>{
+    const records=normalizeRows([{'Mã_HP':'AC2010','Tên_HP':'Kỹ thuật lập trình','Tên_HP_Tiếng_Anh':'Programming Techniques','Mã_lớp':'174410'}],'20261');
+    const course=groupRecords(records)[0];expect(course.nameEnglish).toBe('Programming Techniques');expect(course.sections[0].courseNameEnglish).toBe('Programming Techniques');
   });
   it('ưu tiên nhận diện UET khi sheet ghép có cả cột HUST',()=>{
     const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([['Mã HP','Mã LHP','Thứ','Ca','GĐ','Mã_lớp','BĐ','KT','Kíp','Phòng']]),'Ghép');
@@ -63,6 +71,18 @@ describe('Universal scheduler',()=>{
   it('gom theo course và section',()=>{
     const courses=groupRecords(mockRecords);expect(courses.find(course=>course.code==='ELT3297')?.sections).toHaveLength(2);expect(courses.find(course=>course.code==='ELT3297')?.sections[0].meetings).toHaveLength(2);
   });
+  it('tạo lựa chọn CL + N1 hoặc CL + N2 thay vì bắt học cả hai nhóm',()=>{
+    const records=normalizeRows([
+      {'Mã HP':'UET.COM1050','Mã LHP':'UET.COM1050 1','Môn':'Tư duy tính toán','Nhóm':'CL','LT/BT/TH':'LT','Thứ':'2','Ca':'1'},
+      {'Mã HP':'UET.COM1050','Mã LHP':'UET.COM1050 1','Môn':'Tư duy tính toán','Nhóm':'1','LT/BT/TH':'TH','Thứ':'3','Ca':'2'},
+      {'Mã HP':'UET.COM1050','Mã LHP':'UET.COM1050 1','Môn':'Tư duy tính toán','Nhóm':'2','LT/BT/TH':'TH','Thứ':'4','Ca':'2'},
+    ],'20261');
+    const sections=groupRecords(records)[0].sections;
+    expect(sections).toHaveLength(2);
+    expect(sections.map(section=>section.group)).toEqual(['N1','N2']);
+    expect(sections.every(section=>section.meetings.length===2)).toBe(true);
+    expect(sections[0].meetings.map(meeting=>meeting.group)).toEqual(['CL','N1']);
+  });
   it('ONL không xung đột',()=>{
     const courses=groupRecords(mockRecords);expect(sectionsConflict(courses.find(course=>course.code==='ELT4007')!.sections[0],courses[0].sections[0])).toBe(false);
   });
@@ -91,8 +111,8 @@ describe('Universal scheduler',()=>{
   });
   it('dừng đúng ở giới hạn 200 phương án',()=>{
     const courses:Course[]=Array.from({length:3},(_,courseIndex)=>({
-      code:`C${courseIndex}`,name:`Môn ${courseIndex}`,credits:3,semester:'20261',targetClass:'',schoolFaculty:'',expectedSemester:'',
-      sections:Array.from({length:10},(_,sectionIndex)=>({id:`C${courseIndex}-${sectionIndex}`,courseCode:`C${courseIndex}`,targetClass:'',schoolFaculty:'',group:'',capacity:null,meetings:[]})),
+      code:`C${courseIndex}`,name:`Môn ${courseIndex}`,nameEnglish:'',credits:3,semester:'20261',targetClass:'',schoolFaculty:'',expectedSemester:'',
+      sections:Array.from({length:10},(_,sectionIndex)=>({id:`C${courseIndex}-${sectionIndex}`,courseCode:`C${courseIndex}`,courseName:`Môn ${courseIndex}`,courseNameEnglish:'',targetClass:'',schoolFaculty:'',group:'',capacity:null,meetings:[]})),
     }));
     const output=findSchedules(courses,new Set(courses.map(course=>course.code)),{},undefined,MAX_SCHEDULES);
     expect(output.schedules).toHaveLength(200);
